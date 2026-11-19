@@ -21,11 +21,25 @@ def normalizar_texto(texto: str) -> list[str]:
     
     Devuelve:
     list[str]: Una lista de palabras normalizadas.
-    """    
-    #TODO: Ejercicio 1
-    pass
+    """
+    res = []
 
-def procesar_url_en_indice(url: str, texto: str, indice: dict[str, set[str]]):
+    texto = texto.lower()
+
+    for c in texto:
+        if c in PUNTUACION:
+            texto = texto.replace(c, " ")
+    
+    palabras = texto.split()
+
+    for caracter in palabras:
+        if caracter not in STOP_WORDS and caracter.isalpha():
+            res.append(caracter)
+
+    return res
+
+
+def procesar_url_en_indice(url: str, texto: str, indice: dict[str, set[str]]) -> None:
     """
     Recibe la URL, el texto ya extraído de esa URL y un diccionario que indexa
     URLs de páginas web usando las palabras contenidas en la web como clave.
@@ -37,8 +51,14 @@ def procesar_url_en_indice(url: str, texto: str, indice: dict[str, set[str]]):
     texto (str): El texto extraído de la página web.
     indice (dict[str, set[str]]): El índice de búsqueda a actualizar.
     """
-    # TODO: Ejercicio 2
-    pass
+    texto_limpio = normalizar_texto(texto)
+    
+    for p in texto_limpio:
+        if p not in indice:
+            indice[p] = set()
+        indice[p].add(url)
+            
+
 
 
 def buscar_palabra_simple(palabra: str, indice: dict[str, set[str]]) -> set[str]:
@@ -55,8 +75,12 @@ def buscar_palabra_simple(palabra: str, indice: dict[str, set[str]]) -> set[str]
     Devuelve:
     set[str]: Un conjunto de URLs donde se encontró la palabra.
     """    
-    # TODO: Ejercicio 3
-    return set()
+    limpio = normalizar_texto(palabra)
+
+    if limpio[0] not in indice:
+            return set()
+
+    return indice[limpio[0]]
 
 def buscar_palabras_or(frase: str, indice: dict[str, set[str]]) -> set[str]:
     """
@@ -72,8 +96,15 @@ def buscar_palabras_or(frase: str, indice: dict[str, set[str]]) -> set[str]:
     Devuelve:
     set[str]: Un conjunto de URLs donde se encontraron todas las palabras.
     """    
-    # TODO: Ejercicio 4
-    pass
+    frase = normalizar_texto(frase)
+
+    res = set()
+
+    for p in frase:
+        palabra = buscar_palabra_simple(p, indice)
+        res.update(palabra)
+    return res
+
 
 
 def buscar_palabras_and(frase: str, indice: dict[str, set[str]]) -> set[str]:
@@ -90,8 +121,20 @@ def buscar_palabras_and(frase: str, indice: dict[str, set[str]]) -> set[str]:
     Devuelve:
     set[str]: Un conjunto de URLs donde se encontraron todas las palabras.
     """
-    # TODO: Ejercicio 5
-    return set()
+    frase = normalizar_texto(frase)
+
+    res = []
+
+    if len(frase) == 0:
+        return set()
+
+    primera = buscar_palabra_simple(frase[0],indice)
+
+    for i in frase[1:]:
+        actual = buscar_palabra_simple(i,indice)
+        res = primera.intersection(actual)
+
+    return res
 
 
 def procesar_url_en_indice_top_n(url: str, texto: str, indice: dict[str, set[str]], top_n: int=1000):
@@ -107,8 +150,18 @@ def procesar_url_en_indice_top_n(url: str, texto: str, indice: dict[str, set[str
     indice (dict[str, set[str]]): El índice de búsqueda a actualizar.
     top_n (int): Número de palabras más frecuentes a indexar.
     """
-    # TODO: Ejercicio 6
-    pass
+    
+    texto_limpio = normalizar_texto(texto)
+    recuento = Counter(texto_limpio)
+
+    palabras_frecuentes = recuento.most_common(top_n)
+
+    for palabra, _ in palabras_frecuentes:
+        if palabra not in indice:
+            indice[palabra] = set()
+        indice[palabra].add(url)
+
+
 
 def calcula_estadisticas_indice(indice: dict[str, set[str]]) -> tuple[int, int, float]:
     """
@@ -123,5 +176,19 @@ def calcula_estadisticas_indice(indice: dict[str, set[str]]) -> tuple[int, int, 
         - Número total de URLs indexadas (sin duplicados).
         - Promedio de URLs por palabra: cuántas URLs hay indexadas para cada palabra, en promedio.
     """
-    # TODO: Ejercicio 7
-    return (0, 0, 0.0)    
+    numero_palabras = len(indice)
+    res = set()
+    total_urls = 0
+    for palabra in indice:
+        res.update(indice[palabra])
+        total_urls += len(indice[palabra])
+
+    numero_urls = len(res)
+
+    if numero_palabras == 0:
+        promedio = 0.0
+    else:
+        promedio = total_urls / numero_palabras
+
+    return (numero_palabras, numero_urls, promedio)
+
